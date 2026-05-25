@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecte Paysager — Phase 1</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ── Inline icon replacements (no npm needed) ──────────────────────────────
+    const ChevronRight = () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    );
+    const Leaf = () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+      </svg>
+    );
+    const ClipboardList = () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        <line x1="12" y1="11" x2="16" y2="11"/><line x1="12" y1="16" x2="16" y2="16"/>
+        <line x1="8" y1="11" x2="8.01" y2="11"/><line x1="8" y1="16" x2="8.01" y2="16"/>
+      </svg>
+    );
+
+    // ── Data ──────────────────────────────────────────────────────────────────
+    const fiches = {
+      botanique: [
+        {
+          id: 1,
+          titre: "Classification botanique (Règne → Espèce)",
+          contenu: "Hiérarchie MECE :\n• Règne : Plantae\n• Division : Angiospermes (fleurs) / Gymnospermes (conifères)\n• Classe : Dicots / Monocots\n• Ordre, Famille : Rosaceae, Fabaceae, Poaceae\n• Genre, Espèce : Rosa damascena, Fragaria vesca\n\nImplication paysage : Comprendre famille → compatibilité sol/climat, besoins hydriques associés.",
+          question: "Espèce Rosa damascena appartient à quelle famille ?",
+          reponses: [
+            { text: "Poaceae", correct: false },
+            { text: "Rosaceae", correct: true },
+            { text: "Fabaceae", correct: false }
+          ]
+        },
+        {
+          id: 2,
+          titre: "Morphologie foliaire (identification rapide)",
+          contenu: "Traits discriminants pour identification :\n• Marge : Entière, dentée, lobée\n• Nervation : Parallèle, pennée, palmée\n• Disposition : Alterne, opposée, verticillée\n• Texture : Pubescente, coriace, membraneuse\n\nClé d'identification rapide : Marge + nervation + disposition = 80% certitude.",
+          question: "Quel trait morphologique est le plus discriminant pour identification rapide ?",
+          reponses: [
+            { text: "Longueur", correct: false },
+            { text: "Couleur", correct: false },
+            { text: "Marge + nervation + disposition", correct: true }
+          ]
+        },
+        {
+          id: 3,
+          titre: "Cycle de vie végétal (annuelle → vivace)",
+          contenu: "Stratégies MECE :\n• Annuelles (1 an) : Fleur rapide, forte graine (Coquelicot)\n• Bisannuelles (2 ans) : Rosette Y1 → floraison Y2 (Carotte sauvage)\n• Vivaces herbacées (3+ ans) : Disparition hivernale aérienne, racines/rhizomes persistants\n• Ligneuses (pérennes) : Tiges ligneuses (Arbres, arbustes)\n\nImplication design : Vivaces > annuelles pour stabilité paysage durable.",
+          question: "Une plante annuelle complète son cycle en combien de temps ?",
+          reponses: [
+            { text: "1 an", correct: true },
+            { text: "2 ans", correct: false },
+            { text: "3+ ans", correct: false }
+          ]
+        },
+        {
+          id: 4,
+          titre: "Reproduction végétale (sexuée vs asexuée)",
+          contenu: "Deux modes reproduction :\n• Sexuée (graine) : Pollen + ovule → fruit. Diversité génétique, adaptation\n• Asexuée (bouture, rhizome) : Clone de parent. Certitude génétique, déploiement rapide\n\nApplication paysage : Rhizomes (bambou) = contrôle nécessaire ; graines = biodiversité.",
+          question: "Quel mode reproduction garantit certitude génétique ?",
+          reponses: [
+            { text: "Graine (sexuée)", correct: false },
+            { text: "Bouture (asexuée)", correct: true },
+            { text: "Croisement", correct: false }
+          ]
+        },
+        {
+          id: 5,
+          titre: "Floraison & pollinisation",
+          contenu: "Calendrier français (zones tempérées) :\n• Hiver : Hellébore, Hamamelis, Viorne\n• Printemps : Magnolia, Lilas, Rhododendron\n• Été : Rose, Hydrangea, Lavande\n• Automne : Aster, Chrysanthème, Sedum\n\nPollinisateurs clés : Abeilles (fleurs bleues/violettes), papillons (fleurs rouges/roses), mouches (fleurs blanches).\n\nStratégie : Sélectionner floraisons échelonnées (avril→novembre) + mix couleurs/formes = habitat pollinisateurs.",
+          question: "Quelle fleur attire pollinisateurs diurnes ?",
+          reponses: [
+            { text: "Fleur blanche odeur fade (mouche)", correct: false },
+            { text: "Fleur tubulaire rouge (papillon)", correct: true },
+            { text: "Fleur jaune petite (vent)", correct: false }
+          ]
+        },
+        {
+          id: 6,
+          titre: "Systèmes racinaires (pivot → fasciculé)",
+          contenu: "Types racinaires :\n• Pivot : Racine centrale + latérales, profondeur 1-3 m (Chêne, Noyer, Cerisier)\n• Fasciculé : Faisceau fin diffus, profondeur 30-60 cm (Graminées, Hêtre, Épicéa)\n• Traçant : Horizontal surface, profondeur 5-15 cm (Orme, Peuplier, Framboisier)\n\nImplication : Traçants → pb fondations/tuyauteries ; pivots → croissance profonde, stabilité.",
+          question: "Système racinaire 'pivot' trouvé chez ?",
+          reponses: [
+            { text: "Graminées", correct: false },
+            { text: "Chêne", correct: true },
+            { text: "Épicéa", correct: false }
+          ]
+        }
+      ],
+      ecologie: [
+        {
+          id: 16,
+          titre: "Biomes tempérés français",
+          contenu: "Classification par gradient hydrique :\n• Forêt : >60cm pluie/an, nappes élevées\n• Lande : 40-60 cm, dégradation ancienne (brûlis)\n• Steppe : 25-40 cm, climat continental\n• Désert : <25 cm\n\nFrance métro : Principalement forêt tempérée océanique à continentale.",
+          question: "Biome dominant France métro = ?",
+          reponses: [
+            { text: "Steppe", correct: false },
+            { text: "Forêt tempérée océanique", correct: true },
+            { text: "Désert", correct: false }
+          ]
+        },
+        {
+          id: 17,
+          titre: "Succession écologique (de la friche à la forêt)",
+          contenu: "Phases MECE (temps France tempérée) :\n1. Pionniers herbacés (année 1-2) : Adventices annuelles\n2. Graminées vivaces (année 2-5) : Stabilisation sol\n3. Arbustes pionniers (année 5-15) : Roncier, Saule\n4. Proto-forêt (année 15-50) : Chêne, Érable cohabite arbustes\n5. Forêt climacique (50+ ans) : Équilibre espèces dominantes\n\nApplication design : Guider succession = entretien réduit long terme.",
+          question: "Phase 1 succession écologique = ?",
+          reponses: [
+            { text: "Pionniers herbacés adventices", correct: true },
+            { text: "Forêt mature", correct: false },
+            { text: "Prairies stables", correct: false }
+          ]
+        },
+        {
+          id: 18,
+          titre: "Interactions interspécifiques (+ / − / 0)",
+          contenu: "Quatre relations majeures :\n• Mutualisme (+,+) : Légumineuse + Rhizobia N-fixation\n• Parasitisme (+,−) : Gui → Chêne\n• Compétition (−,−) : Deux espèces même ressource\n• Commensalisme (+,0) : Lierre sur mur\n\nImplication : Combiner mutualistes (Trèfle + Orge) ; éviter compétition directe.",
+          question: "Commensalisme = relation ?",
+          reponses: [
+            { text: "(+,+) mutualisme", correct: false },
+            { text: "(+,0)", correct: true },
+            { text: "(−,−) compétition", correct: false }
+          ]
+        },
+        {
+          id: 19,
+          titre: "Réseaux trophiques (chaînes alimentaires)",
+          contenu: "Niveaux MECE :\n• Producteurs primaires : Plantes (photosynthèse)\n• Consommateurs I : Herbivores (insectes, lapins)\n• Consommateurs II : Carnivores (oiseaux, renards)\n• Décomposeurs : Champignons, bactéries\n\nTransfert énergétique : ~10% montée trophique.\n\nImplication paysage : Diversité botanique → insectes → oiseaux → équilibre.",
+          question: "Transfert énergétique trophique = ?",
+          reponses: [
+            { text: "100%", correct: false },
+            { text: "~10% montée niveau", correct: true },
+            { text: "Stable", correct: false }
+          ]
+        },
+        {
+          id: 20,
+          titre: "Cycles biogéochimiques (N, P, C)",
+          contenu: "Cycle azote (simplifié) :\nAtmosphère N₂ → Fixation bactérienne (Rhizobium) → NO₃ sol → Plantes → Animaux → Décomposition → NH₃ → Nitrification → NO₃\n\nImplication paysage : Légumineuses (trèfle, luzerne) = enrichissement gratuit N ; compost = recyclage.",
+          question: "Légumineuses enrichissent sol via ?",
+          reponses: [
+            { text: "Fixation N₂ Rhizobia symbiose", correct: true },
+            { text: "Exsudats racinaires P", correct: false },
+            { text: "Feuilles sénescence K", correct: false }
+          ]
+        },
+        {
+          id: 21,
+          titre: "Mycorhizes & symbioses fongiques",
+          contenu: "Deux types principaux :\n• Ectomycorhizes (ex. Chêne-Cèpe) : Champignon enveloppe racine\n• Endomycorhizes (Arbuscules) : Champignon pénètre cortex racinaire\n\nBénéfice mutuel : Champi → eau/nutriments lointains ; Plante → sucres.\n\nImplication : Sol riche mycorhizes = croissance robuste ; perturbation sol = perte symbiose.",
+          question: "Mycorhizes Bénéfice = ?",
+          reponses: [
+            { text: "Plante → sucres, Champi → eau/nutriments", correct: true },
+            { text: "Compétition directe", correct: false },
+            { text: "Parasite obligatoire", correct: false }
+          ]
+        }
+      ],
+      sols: [
+        {
+          id: 31,
+          titre: "Profil pédologique & horizons (O → A → B → C → R)",
+          contenu: "Horizons du sol :\n• O : Litière, matière organique, faiblement minéralisé\n• A : Topsoil, humus + minéraux, ≈10-30 cm, racinaire\n• B : Subsoil, accumulation argile/Fe/Al, transition hydrologie\n• C : Régolite, parent rock fragmenté, peu altéré\n• R : Roche-mère, bed rock solide\n\nTest rapide : Creuser tarière à 60 cm = horizons visibles.",
+          question: "Horizon racinaire principal = ?",
+          reponses: [
+            { text: "O (litière)", correct: false },
+            { text: "A (topsoil)", correct: true },
+            { text: "C (régolite)", correct: false }
+          ]
+        },
+        {
+          id: 32,
+          titre: "Formation du sol (pédogénèse = 100 ans / cm)",
+          contenu: "Facteurs Jenny (CLORPT) :\n• Climate : Pluie + température (vitesse altération)\n• Living organisms : Racines, animaux, microbes\n• Orography : Pente (drainage, érosion)\n• Reaction time : Durée processus (~1000 ans sol mature)\n• Parent material : Type roche initiale\n• Time : Âge pédogenèse\n\nImplication : Sol = ressource finie (100+ ans régénération) → conservation critique.",
+          question: "Pédogénèse vitesse = ?",
+          reponses: [
+            { text: "1 cm/10 ans", correct: true },
+            { text: "1 cm/an", correct: false },
+            { text: "1 cm/100 ans", correct: false }
+          ]
+        },
+        {
+          id: 33,
+          titre: "Texture du sol (Argile-Limon-Sable)",
+          contenu: "Triangle des textures (USDA) :\n• Argile : >40%, compacte, retient eau, collant\n• Limon : 40-50%, lisse\n• Sable : >70%, drainant, pauvre rétention\n• IDÉAL (Loam) : 20-25% argile, 40-50% limon, 30-35% sable = équilibré\n\nTest champ : Malaxer mouillé → forme boule = argile ; poudre = sable ; lisse = limon.",
+          question: "Texture idéale 'Loam' = %Argile / %Limon / %Sable ?",
+          reponses: [
+            { text: "20-25 / 40-50 / 30-35", correct: true },
+            { text: "5 / 10 / 85", correct: false },
+            { text: "60 / 20 / 20", correct: false }
+          ]
+        },
+        {
+          id: 34,
+          titre: "Stabilité structurale & agrégats",
+          contenu: "Agrégats = groupes particules liées.\n\nAgents de cimentation :\n• Argile gonflante (montmorillonite)\n• Matière organique (humus)\n• Oxyde fer/aluminium (latérite tropicale)\n• Calcaire (CaCO₃)\n\nImplication : Compaction destruction agrégats → perte porosité ; ajout compost = régénération.",
+          question: "Agrégation cimentage = ?",
+          reponses: [
+            { text: "Argile gonflante, MO, oxydes", correct: true },
+            { text: "Granules pures", correct: false },
+            { text: "Instabilité permanente", correct: false }
+          ]
+        },
+        {
+          id: 35,
+          titre: "pH du sol & réaction acido-basique",
+          contenu: "Échelle pH :\n• pH <5,5 : Acide (lessivé, tourbeux)\n• pH 6-7 : Légèrement acide → neutre (optimal)\n• pH 7-8,5 : Alcalin/calcaire\n• pH >8,5 : Très alcalin (problème chélation Fe)\n\nMesure rapide : Kit bandelettes ~€5 (précision ±0,5).\n\nImplication : Azalée = pH 4,5-5,5 ; Pivoine = pH 6,5-7,5 → adapter plantes ou amender.",
+          question: "pH optimal plantes = ?",
+          reponses: [
+            { text: "4,5-5", correct: false },
+            { text: "6-7", correct: true },
+            { text: "8-9", correct: false }
+          ]
+        },
+        {
+          id: 36,
+          titre: "Chaux, calcaire & correction pH",
+          contenu: "Correction acide :\n• Chaux aérée (Ca(OH)₂) : Réaction rapide, +pH 0,5-1 en 1 mois\n• Calcaire broyé (CaCO₃) : Lent (6-12 mois), effet durable\n\nDose : ~500 g/m² chaux = +0,3-0,5 pH (sol léger).\n\nCorrection basique : Soufre élémentaire (S) : 1 kg/m² = −0,5-1 pH en 3-6 mois.",
+          question: "Chaux aérienne réaction pH = ?",
+          reponses: [
+            { text: "Lent 6-12 mois", correct: false },
+            { text: "Rapide 1 mois +0,5-1", correct: true },
+            { text: "Pas d'effet", correct: false }
+          ]
+        }
+      ]
+    };
+
+    const sections = [
+      { id: 'botanique', nom: '🌿 Botanique appliquée', count: 6, icon: '🌱' },
+      { id: 'ecologie', nom: '🌍 Écologie paysagère', count: 6, icon: '🦋' },
+      { id: 'sols',     nom: '⛰️ Sciences du sol',   count: 6, icon: '💧' }
+    ];
+
+    // ── Component ─────────────────────────────────────────────────────────────
+    function LandscapeLearner() {
+      const [mode, setMode] = useState('menu');
+      const [currentSection, setCurrentSection] = useState(null);
+      const [currentFicheIndex, setCurrentFicheIndex] = useState(0);
+      const [quizAnswers, setQuizAnswers] = useState({});
+      const [completedFiches, setCompletedFiches] = useState(new Set());
+      const [terraceLog, setTerraceLog] = useState([]);
+      const [newLogEntry, setNewLogEntry] = useState('');
+      const [lastAnswer, setLastAnswer] = useState(null); // {correct, text}
+
+      const handleStartSection = (sectionId) => {
+        setCurrentSection(sectionId);
+        setCurrentFicheIndex(0);
+        setLastAnswer(null);
+        setMode('fiche');
+      };
+
+      const handleNextFiche = () => {
+        const section = fiches[currentSection];
+        setLastAnswer(null);
+        if (currentFicheIndex < section.length - 1) {
+          setCurrentFicheIndex(currentFicheIndex + 1);
+        } else {
+          setMode('progression');
+        }
+      };
+
+      const handleQuizSubmit = (answer) => {
+        const section = fiches[currentSection];
+        const currentFiche = section[currentFicheIndex];
+        setLastAnswer(answer);
+        setQuizAnswers({ ...quizAnswers, [currentFiche.id]: answer });
+        if (answer.correct) {
+          setCompletedFiches(new Set([...completedFiches, currentFiche.id]));
+        }
+        setTimeout(handleNextFiche, 1200);
+      };
+
+      const handleAddTerraceLog = () => {
+        if (newLogEntry.trim()) {
+          setTerraceLog([
+            ...terraceLog,
+            { date: new Date().toLocaleDateString('fr-FR'), entry: newLogEntry }
+          ]);
+          setNewLogEntry('');
+        }
+      };
+
+      const getProgressPercentage = () =>
+        Math.round((completedFiches.size / 18) * 100);
+
+      // ── MENU ──────────────────────────────────────────────────────────────
+      if (mode === 'menu') return (
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold text-green-800 mb-2">🏗️ Architecte Paysager</h1>
+              <p className="text-gray-600 text-lg">Phase 1 : Apprentissage autonome accéléré</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {sections.map((section) => (
+                <div
+                  key={section.id}
+                  onClick={() => handleStartSection(section.id)}
+                  className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow"
+                >
+                  <div className="text-4xl mb-3">{section.icon}</div>
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">{section.nom}</h2>
+                  <p className="text-gray-600 mb-4">{section.count} fiches + quiz</p>
+                  <div className="flex items-center gap-2 text-green-600 font-semibold">
+                    Commencer <ChevronRight />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+              <div className="flex items-center gap-3 mb-4 text-green-600">
+                <Leaf />
+                <h3 className="text-xl font-bold text-gray-800">Journal terrasse</h3>
+              </div>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newLogEntry}
+                  onChange={(e) => setNewLogEntry(e.target.value)}
+                  placeholder="Observation du jour (plante, sol, météo...)"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddTerraceLog()}
+                />
+                <button
+                  onClick={handleAddTerraceLog}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                >
+                  Ajouter
+                </button>
+              </div>
+              {terraceLog.length > 0 && (
+                <div className="space-y-2">
+                  {terraceLog.slice(-5).map((log, idx) => (
+                    <div key={idx} className="text-sm text-gray-600 border-l-4 border-green-400 pl-3">
+                      <span className="font-semibold">{log.date}</span> : {log.entry}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center gap-3 mb-4 text-blue-600">
+                <ClipboardList />
+                <h3 className="text-xl font-bold text-gray-800">Progression</h3>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-blue-500 h-full transition-all duration-500"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                />
+              </div>
+              <p className="text-center mt-3 text-gray-700 font-semibold">
+                {completedFiches.size}/18 fiches complétées ({getProgressPercentage()}%)
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+
+      // ── FICHE ─────────────────────────────────────────────────────────────
+      if (mode === 'fiche') {
+        const section = fiches[currentSection];
+        const currentFiche = section[currentFicheIndex];
+
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-6">
+            <div className="max-w-3xl mx-auto">
+              <button
+                onClick={() => setMode('menu')}
+                className="text-gray-600 hover:text-gray-800 mb-6 flex items-center gap-2"
+              >
+                ← Menu principal
+              </button>
+
+              <div className="bg-white rounded-lg shadow-lg p-8">
+                <div className="mb-6">
+                  <div className="text-sm text-gray-500 mb-2">
+                    Fiche {currentFicheIndex + 1}/{section.length}
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      style={{ width: `${((currentFicheIndex + 1) / section.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">{currentFiche.titre}</h2>
+
+                <div className="bg-blue-50 rounded-lg p-6 mb-8 whitespace-pre-wrap text-gray-700 leading-relaxed font-medium">
+                  {currentFiche.contenu}
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Quiz :</h3>
+                  <p className="text-lg text-gray-700 mb-6">{currentFiche.question}</p>
+
+                  <div className="space-y-3">
+                    {currentFiche.reponses.map((reponse, idx) => {
+                      let cls = "w-full text-left p-4 border-2 rounded-lg transition font-medium ";
+                      if (lastAnswer) {
+                        if (reponse.correct) cls += "border-green-500 bg-green-50 text-green-800";
+                        else if (lastAnswer === reponse) cls += "border-red-400 bg-red-50 text-red-700";
+                        else cls += "border-gray-200 text-gray-400";
+                      } else {
+                        cls += "border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-700 cursor-pointer";
+                      }
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => !lastAnswer && handleQuizSubmit(reponse)}
+                          disabled={!!lastAnswer}
+                          className={cls}
+                        >
+                          {lastAnswer
+                            ? (reponse.correct ? "✅" : lastAnswer === reponse ? "❌" : "◯")
+                            : "◯"
+                          } {reponse.text}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {lastAnswer && (
+                    <p className={`mt-4 text-center font-semibold text-lg ${lastAnswer.correct ? 'text-green-600' : 'text-red-500'}`}>
+                      {lastAnswer.correct ? '🎉 Correct !' : '❌ Incorrect — bonne réponse en vert'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ── PROGRESSION ───────────────────────────────────────────────────────
+      if (mode === 'progression') return (
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-6">
+          <div className="max-w-3xl mx-auto">
+            <button
+              onClick={() => setMode('menu')}
+              className="text-gray-600 hover:text-gray-800 mb-6 flex items-center gap-2"
+            >
+              ← Menu principal
+            </button>
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">Section complétée !</h2>
+              <p className="text-gray-600 mb-2">
+                Score global : {completedFiches.size}/18 fiches ({getProgressPercentage()}%)
+              </p>
+              <p className="text-gray-500 mb-8">Excellent travail. Continuez vers la section suivante.</p>
+              <button
+                onClick={() => setMode('menu')}
+                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition font-semibold"
+              >
+                Retour au menu
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
+      return null;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<LandscapeLearner />);
+  </script>
+</body>
+</html>
